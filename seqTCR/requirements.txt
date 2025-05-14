@@ -1,0 +1,10 @@
+numpy==2.0.2
+pandas==2.2.2
+xgboost==2.0.3
+scikit-learn==1.4.2
+matplotlib==3.8.4
+h5py==3.11.0
+torch==2.2.2
+esm==1.0.0
+shap==0.45.0
+anarci==1.3
