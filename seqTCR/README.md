@@ -10,7 +10,7 @@ The core of the project involves predicting how T-cell receptors (TCRs) pair to 
 
 The following diagram illustrates the pipeline used in `seqTCR`, from sequence embedding to binding prediction:
 
-<img src="seq_pipeline.png" alt="Pipeline Overview" width="600">
+<img src="seq_pipeline.png" alt="Pipeline Overview" width="900">
 
 ## Requirements
 
