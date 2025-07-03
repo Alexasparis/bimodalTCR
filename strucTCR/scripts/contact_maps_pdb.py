@@ -64,14 +64,14 @@ def process_pdb_file(pdb_file, pdb_dir, output_dir, chain_dict):
         return
 
     if pdb_id in chain_dict:
-        contacts_df = extract_contacts([pdb_path], chain_dict)
+        contacts_df = extract_contacts([pdb_path], chain_dict, distance = 10)
     else:
         print(f"Chain info not found for {pdb_id}. Using default chains...")
         chain_dict_local = {pdb_id: {
             'tcra_chain': 'D', 'tcrb_chain': 'E',
             'peptide_chain': 'C', 'b2m_chain': 'B',
             'mhc_chain': 'A'}}
-        contacts_df = extract_contacts([pdb_path], chain_dict_local)
+        contacts_df = extract_contacts([pdb_path], chain_dict_local, distance = 10)
     
     temp_file = f"{output_file}.temp"
     contacts_df.to_csv(temp_file, index=False)

@@ -93,39 +93,45 @@ def extract_contacts(pdb_files, chain_dict, distance=5):
     return pd.DataFrame(contacts, columns=['pdb_id', 'chain_from', 'chain_to', 'residue_from', 'residue_to', 'resid_from', 'resid_to', 'atom_from', 'atom_to', 'dist'])
 
 
-
-def filter_contacts(contacts, tcra_chain, tcrb_chain, peptide_chain, mhc_chain, threshold=1, remove_X=True):
+def filter_contacts(contacts, tcra_chain, tcrb_chain, peptide_chain, mhc_chain, threshold=1, remove_X=True, min_distance=5):
     """
-    Filter contacting residues to get only those with more than a certain number of atoms contacting (default=2).
+    Filter contacting residues to get only those with more than a certain number of atoms contacting (default=1).
     Splits the dataframe to get two dataframes with the contacting residues between TCR-peptide and TCR-MHC respectively.
-    
+
     Args:
-        contacts (df): DataFrame containing contacts between residues. Format ['pdb_id', 'chain_from', 'chain_to', 'residue_from', 'residue_to', 'resid_from', 'resid_to', 'atom_from', 'atom_to', 'dist']
+        contacts (df): DataFrame containing contacts between residues.
         tcra_chain (str): Chain ID for TCRA chain.
         tcrb_chain (str): Chain ID for TCRB chain.
         peptide_chain (str): Chain ID for peptide chain.
         mhc_chain (str): Chain ID for MHC chain.
         threshold (int): Minimum number of atoms contacting (default = 1).
         remove_X (bool): Whether to filter out residues with 'X'. Default is True.
-        
+        min_distance (float): Minimum distance between atoms to count as a contact (Å). Default is 5 Å.
+
     Returns:
         tuple: DataFrames containing filtered contacts for TCR-peptide and TCR-MHC.
     """
-    
-    # Get occurrences with more than the threshold number of atoms contacting
-    contacts_unique = contacts[['pdb_id', 'chain_from', 'chain_to', 'residue_from', 'residue_to', 'resid_from', 'resid_to']]
-    counts = contacts_unique.groupby(['pdb_id', 'chain_from', 'chain_to', 'residue_from', 'residue_to', 'resid_from', 'resid_to']).size()
-    duplicates = counts[counts >= threshold].index
-    filtered_contacts = contacts_unique.set_index(['pdb_id', 'chain_from', 'chain_to', 'residue_from', 'residue_to', 'resid_from', 'resid_to'])
-    contacts_filtered = filtered_contacts.loc[duplicates].reset_index()
-    contacts_filtered_unique = contacts_filtered.drop_duplicates()
-    
-    # Remove rows with 'X' if remove_X is True
+
+    # Filter by minimum distance first
+    contacts = contacts[contacts['dist'] >= min_distance]
+
+    # Remove rows with 'X' if requested
     if remove_X:
-        contacts_filtered_unique = contacts_filtered_unique[
-            (contacts_filtered_unique['residue_from'] != 'X') &
-            (contacts_filtered_unique['residue_to'] != 'X')]
-    
+        contacts = contacts[
+            (contacts['residue_from'] != 'X') &
+            (contacts['residue_to'] != 'X')]
+
+    # Count atom-level contacts per residue-residue pair
+    contact_keys = ['pdb_id', 'chain_from', 'chain_to', 'residue_from', 'residue_to', 'resid_from', 'resid_to']
+    counts = contacts.groupby(contact_keys).size()
+    valid_keys = counts[counts >= threshold].index
+
+    # Keep only those contacts with enough atoms contacting
+    contacts_filtered = contacts.set_index(contact_keys).loc[valid_keys].reset_index()
+
+    # Remove duplicates at the residue-residue level
+    contacts_filtered_unique = contacts_filtered.drop_duplicates(subset=contact_keys)
+
     # TCR/peptide contacts
     contacts_TCR_p = contacts_filtered_unique[
         (contacts_filtered_unique['chain_from'].isin([tcra_chain, tcrb_chain])) & 
@@ -135,10 +141,11 @@ def filter_contacts(contacts, tcra_chain, tcrb_chain, peptide_chain, mhc_chain, 
     contacts_TCR_MHC = contacts_filtered_unique[
         (contacts_filtered_unique['chain_from'].isin([tcra_chain, tcrb_chain])) & 
         (contacts_filtered_unique['chain_to'] == mhc_chain)]
-    
+
     return contacts_TCR_p, contacts_TCR_MHC
 
-def filter_contacts_weighted(contacts, tcra_chain, tcrb_chain, peptide_chain, mhc_chain, remove_X=True):
+
+def filter_contacts_weighted(contacts, tcra_chain, tcrb_chain, peptide_chain, mhc_chain, remove_X=True, min_distance=10):
     """
     Filter the contacts between residues for TCR-peptide and TCR-MHC interactions without grouping.
     
@@ -158,7 +165,10 @@ def filter_contacts_weighted(contacts, tcra_chain, tcrb_chain, peptide_chain, mh
         contacts = contacts[
             (contacts['residue_from'] != 'X') &
             (contacts['residue_to'] != 'X')]
-    
+        
+    # Filter by minimum distance
+    contacts = contacts[contacts['dist'] >= min_distance]
+
     # TCR/peptide contacts
     contacts_TCR_p = contacts[
         (contacts['chain_from'].isin([tcra_chain, tcrb_chain])) & 
