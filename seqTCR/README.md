@@ -6,6 +6,12 @@ This project aims to predict TCR-peptide binding based on squence data, using ES
 
 The core of the project involves predicting how T-cell receptors (TCRs) pair to peptide-major histocompatibility complex class I (pMHC) complexes.
 
+## Pipeline Overview
+
+The following diagram illustrates the pipeline used in `seqTCR`, from sequence embedding to binding prediction:
+
+![Pipeline Overview](seq_pipeline.png)
+
 ## Requirements
 
 - Python 3.6 or later.
